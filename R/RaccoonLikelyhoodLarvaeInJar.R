@@ -1,6 +1,6 @@
 # Alma musseel experiment
 # likelihood of larvae in jar
-install.packages("broom")
+
 #library
 library(tidyverse)
 library(here)
@@ -14,7 +14,7 @@ library(rms)
 library(survELtest)
 
 #set working directory
-setwd("C:/Users/Lindsay/Dropbox/Raccoon/larvae/oyster/larvae survival stats/GitHub/RacoonOlyLarvalSurvival")
+setwd("C:/Users/Lindsay/Dropbox/Raccoon/larvae/oyster/larvae survival stats/GitHub/RaccoonOlyLarvalSurvival2")
 
 #jar and sample volumes (ml)
 vol_jar <- 100 
@@ -380,6 +380,7 @@ ggsurvplot(sf, data=bigcox, conf.int=T,  risk.table=F, pval=F,legend=c("right"),
 ################## PM : Question about the plot. Shouldnt we have much fatter looking confience intervals given we have all the replicates?
 head(bigcox)
 
+#Just 1 rep cox output
 R1<-subset(bigcox, rep_id=="1")
 KMsurv = Surv(time = R1$day, R1$status, type = "right")
 sf <- survfit(KMsurv ~ site + treatment, data = R1)
@@ -390,16 +391,11 @@ out1 = tidy(coxR1)
 out1
 write.csv(here("out1.csv"))
 
-
+#writing the for loop model
 database<-bigcox
 head(database)
 numreps <- as.numeric(max(database$rep_id)) #number of replicates=500 single number
 k <- filter(database, database$rep_id == 1)#only 1 out of 500 reps
-k
-#d_expand <- data.frame(jar_id = rep(big$jar_id[1], times = count$sim_count[1]))  %>% #create a data frame of that jar
-
-k<-c(1,2)
-k
 
 
 #make the data for graphing
@@ -419,7 +415,7 @@ coxcoef <- vector(mode = "list", length = numreps)
 
 numreps <- 500
 
-#run the 'real' model
+#run the cox model in a for loop
 for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate it's on
   rep <- subset(database, rep_id == i)#filter 1 rep at a time
   coxoutput <- coxph(Surv(day, status) ~ treatment + site + treatment:site, data = rep)
@@ -433,9 +429,60 @@ for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate
   coxcoef[[i]] <- blah #assign the dataframe to the correct spot in the list
 }
 
-#combine all coefficients into a single dataframe
-coefficients_ci20 <- bind_rows(coxcoef)
+#combine all coefficients and p-value into a single dataframe
+coefficients_ci20 <- bind_rows(coxcoef)#CI20 as the control
 head(coefficients_ci20)
+
+write.csv(coefficients_ci20, file = "coefficients_ci20.csv")
+
+#run model with othe refs
+
+#####CI5 as ref, CI20 deleted
+R1 = filter(bigcox, !(site %in% c("CI20")))
+
+KMsurv = Surv(time = R1$day, R1$status, type = "right")
+sf <- survfit(KMsurv ~ site + treatment, data = R1)
+coxR1<-coxph(KMsurv~treatment*site, data=R1)
+S1<-summary(coxR1)
+S1
+ggforest(coxR1)
+
+#Just 1 rep cox output
+R1<-subset(CI5ref, rep_id=="1")
+View(R1)
+KMsurv = Surv(time = R1$day, R1$status, type = "right")
+sf <- survfit(KMsurv ~ site + treatment, data = R1)
+coxR1<-coxph(KMsurv~treatment*site, data=R1)
+S1<-summary(coxR1)
+ggforest(coxR1)
+
+
+#run the cox model in a for loop
+for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate it's on
+  rep <- subset(CI5ref, rep_id == i)#filter 1 rep at a time
+  coxoutput <- coxph(Surv(day, status) ~ treatment * site, data = rep)
+  cox[[i]] <- coxoutput #store the whole output of the model in a list
+  blah <- data.frame( #create a data frame with the coefficients and the replicate
+    coefficients = coxoutput$coefficients,
+    replicate = i,
+    pval = summary(coxoutput)$coefficients[,5])
+  blah$treatment_site <- rownames(blah) #in that dataframe, create a new column that has the treatment and site
+  #info in it
+  coxcoef[[i]] <- blah #assign the dataframe to the correct spot in the list
+}
+#combine all coefficients and p-value into a single dataframe
+coefficients_ci5 <- bind_rows(coxcoef)#CI5 as the control
+head(coefficients_ci5)
+
+write.csv(coefficients_ci5, file = "coefficients_ci5.csv")
+
+
+
+
+
+
+
+
 
 View(sf)
 cox<-coxph(Surv(day[1],status[1])~site[k] +treatment[k], data=rep)
@@ -448,23 +495,6 @@ write.csv("coxout.csv")
 write.csv(coxout, file = "coxout.csv" )
 
 
-##notes
-cox1<-coxph(KMsurv~Treatment+Location, data=OlyLarvaeKMforR)
-cox<-coxph(KMsurv~site + treatment, data=rep)
-coxph(Surv(day, status) ~ treatment+site+treatment:site, data = rep)
-
-View(rep)
-sf
-write.csv(cox1, file = "cox1.csv")
-
-d_expand <- data.frame(jar_id = rep(count$jar_id[1], times = count$sim_count[1]))  %>% #create a data frame of that jar
-  
-  mutate(rep_id = count$rep_id[1],  #create the number of rows that corresponds to the 
-         #number of simulated larvae on day 1
-         treatment = count$treatment[1], 
-         site = count$site[1], 
-         day = count$day[nrow(count)],
-         status = 0)
 
 
 
