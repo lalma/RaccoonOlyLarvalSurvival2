@@ -438,28 +438,49 @@ write.csv(coefficients_ci20, file = "coefficients_ci20.csv")
 #run model with othe refs
 
 #####CI5 as ref, CI20 deleted
-R1 = filter(bigcox, !(site %in% c("CI20")))
+CI5ref = filter(bigcox, !(site %in% "CI20"))
+write.csv(CI5ref, file = "CI5ref.csv")
+View(CI5ref)
+nrow(bigcox)
+nrow(CI5ref)
 
-KMsurv = Surv(time = R1$day, R1$status, type = "right")
-sf <- survfit(KMsurv ~ site + treatment, data = R1)
-coxR1<-coxph(KMsurv~treatment*site, data=R1)
-S1<-summary(coxR1)
-S1
-ggforest(coxR1)
+#DB ref, CI 20 and 5 deleted
+DB5ref = filter(bigcox, !(site %in% c("CI5","CI20")))
+write.csv(CI5ref, file = "CI5ref.csv")
+View(CI5ref)
+nrow(bigcox)
+nrow(DB5ref)
+
+#PW ref, all other delted
+PW5ref = filter(bigcox, !(site %in% c("CI5","DB","CI20")))
+write.csv(CI5ref, file = "CI5ref.csv")
+View(CI5ref)
+nrow(bigcox)
+nrow(DB5ref)
+nrow(PW5ref)
+
 
 #Just 1 rep cox output
-R1<-subset(CI5ref, rep_id=="1")
+PW5ref<-subset(PW5ref, rep_id=="1")
 View(R1)
 KMsurv = Surv(time = R1$day, R1$status, type = "right")
 sf <- survfit(KMsurv ~ site + treatment, data = R1)
 coxR1<-coxph(KMsurv~treatment*site, data=R1)
-S1<-summary(coxR1)
+coxR1
 ggforest(coxR1)
 
 
+survPW5ref <-Surv(time = PW5ref$day, PW5ref$status, type = "right")
+sfPW5ref <- survfit(survPW5ref ~ treatment +site, data = PW5ref)
+ggsurvplot(sfPW5ref, conf.int = TRUE)
+coxPW5ref<-coxph(survPW5ref ~ treatment * site, data = PW5ref)
+coxPW5ref
+ggforest(coxPW5ref, data=PW5ref)
+
+#PW only
 #run the cox model in a for loop
 for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate it's on
-  rep <- subset(CI5ref, rep_id == i)#filter 1 rep at a time
+  rep <- subset(PW5ref, rep_id == i)#filter 1 rep at a time
   coxoutput <- coxph(Surv(day, status) ~ treatment * site, data = rep)
   cox[[i]] <- coxoutput #store the whole output of the model in a list
   blah <- data.frame( #create a data frame with the coefficients and the replicate
@@ -471,12 +492,36 @@ for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate
   coxcoef[[i]] <- blah #assign the dataframe to the correct spot in the list
 }
 #combine all coefficients and p-value into a single dataframe
-coefficients_ci5 <- bind_rows(coxcoef)#CI5 as the control
-head(coefficients_ci5)
+coefficients_pw5 <- bind_rows(coxcoef)#pw as the control
+head(coefficients_pw5)
 
-write.csv(coefficients_ci5, file = "coefficients_ci5.csv")
+write.csv(coefficients_pw5, file = "coefficients_pw5.csv")
 
 
+#################DB only
+#DB ref, CI 20 and 5 deleted
+DB5ref = filter(bigcox, !(site %in% c("CI5","CI20")))
+nrow(DB5ref)
+
+#DB only
+#run the cox model in a for loop
+for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate it's on
+  rep <- subset(DB5ref, rep_id == i)#filter 1 rep at a time
+  coxoutput <- coxph(Surv(day, status) ~ treatment * site, data = rep)
+  cox[[i]] <- coxoutput #store the whole output of the model in a list
+  blah <- data.frame( #create a data frame with the coefficients and the replicate
+    coefficients = coxoutput$coefficients,
+    replicate = i,
+    pval = summary(coxoutput)$coefficients[,5])
+  blah$treatment_site <- rownames(blah) #in that dataframe, create a new column that has the treatment and site
+  #info in it
+  coxcoef[[i]] <- blah #assign the dataframe to the correct spot in the list
+}
+#combine all coefficients and p-value into a single dataframe
+coefficients_DB5 <- bind_rows(coxcoef)#DB as the control
+head(coefficients_DB5)
+
+write.csv(coefficients_DB5, file = "coefficients_DB5.csv")
 
 
 
