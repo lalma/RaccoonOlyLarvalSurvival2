@@ -1,4 +1,4 @@
-# Alma musseel experiment
+# Alma oyster larvae experiment
 # likelihood of larvae in jar
 
 #library
@@ -12,6 +12,8 @@ library(survminer)
 library(ggplot2)
 library(rms)
 library(survELtest)
+
+.libPaths()
 
 #set working directory
 setwd("C:/Users/Lindsay/Dropbox/Raccoon/larvae/oyster/larvae survival stats/GitHub/RaccoonOlyLarvalSurvival2")
@@ -397,6 +399,7 @@ head(database)
 numreps <- as.numeric(max(database$rep_id)) #number of replicates=500 single number
 k <- filter(database, database$rep_id == 1)#only 1 out of 500 reps
 
+############################CI20
 
 #make the data for graphing
 sv = Surv(time = database$day, database$status, type = "right") #running Surv model on the replicate,
@@ -408,7 +411,6 @@ ggsurvplot(sf, group.by = c(treatment, site), conf.int = 0.05)
 #figure out a way to manually define confidence intervals based on the different replicates
 
 
-############################
 #create an empty list to store all of the replicate cox outputs
 cox <- vector(mode = "list", length = numreps)
 coxcoef <- vector(mode = "list", length = numreps)
@@ -436,27 +438,6 @@ write.csv(coefficients_ci20, file = "coefficients_ci20.csv")
 
 #run model with other site as refs
 
-#####CI5 as ref, CI20 deleted
-CI5ref = filter(bigcox, !(site %in% "CI20"))
-write.csv(CI5ref, file = "CI5ref.csv")
-View(CI5ref)
-nrow(bigcox)
-nrow(CI5ref)
-
-#DB ref, CI 20 and 5 deleted
-DB5ref = filter(bigcox, !(site %in% c("CI5","CI20")))
-write.csv(CI5ref, file = "CI5ref.csv")
-View(CI5ref)
-nrow(bigcox)
-nrow(DB5ref)
-
-#PW ref, all other delted
-PW5ref = filter(bigcox, !(site %in% c("CI5","DB","CI20")))
-write.csv(CI5ref, file = "CI5ref.csv")
-View(CI5ref)
-nrow(bigcox)
-nrow(DB5ref)
-nrow(PW5ref)
 
 
 #Just 1 rep cox output
@@ -468,6 +449,15 @@ coxPW5ref
 ggforest(coxPW5ref, data=PW5ref)
 
 ##################PW only
+
+#make the data for graphing
+sv = Surv(time = database$day, database$status, type = "right") #running Surv model on the replicate,
+#taking into account day and status
+sf <- survfit(sv ~ site + treatment + rep_id, data = database) #taking what we just made and 
+#putting it into a different function
+#graphing it
+ggsurvplot(sf, group.by = c(treatment, site), conf.int = 0.05) 
+
 #run the cox model in a for loop
 for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate it's on
   rep <- subset(PW5ref, rep_id == i)#filter 1 rep at a time
@@ -517,17 +507,91 @@ write.csv(coefficients_DB5, file = "coefficients_DB5.csv")
 
 
 
+#########################PW14 ref, all other delted
+PW5ref = filter(bigcox, !(site %in% c("CI5","DB","CI20")))
+write.csv(PW5ref, file = "PW5ref.csv")
+head(PW5ref)
 
 
-View(sf)
-cox<-coxph(Surv(day[1],status[1])~site[k] +treatment[k], data=rep)
+#make the data for graphing
+sv = Surv(time = PW5ref$day, PW5ref$status, type = "right") #running Surv model on the replicate,
+#taking into account day and status
+sf <- survfit(sv ~ site + treatment + rep_id, data = PW5ref) #taking what we just made and 
+#putting it into a different function
+#graphing it- takes al ong time
+#ggsurvplot(sf, group.by = c(treatment, site), conf.int = 0.05) 
+#figure out a way to manually define confidence intervals based on the different replicates
 
-coxout = tidy(cox)
-coxout
-class(coxout)
-coxout
-write.csv("coxout.csv")
-write.csv(coxout, file = "coxout.csv" )
+
+#create an empty list to store all of the replicate cox outputs
+numreps <- 500
+cox <- vector(mode = "list", length = numreps)
+coxcoef <- vector(mode = "list", length = numreps)
+
+
+#run the cox model in a for loop
+for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate it's on
+  rep <- subset(PW5ref, rep_id == i)#filter 1 rep at a time
+  coxoutput <- coxph(Surv(day, status) ~ treatment, data = rep)
+  cox[[i]] <- coxoutput #store the whole output of the model in a list
+  blah <- data.frame( #create a data frame with the coefficients and the replicate
+    coefficients = coxoutput$coefficients,
+    replicate = i,
+    pval = summary(coxoutput)$coefficients[,5])
+  blah$treatment_site <- rownames(blah) #in that dataframe, create a new column that has the treatment and site
+  #info in it
+  coxcoef[[i]] <- blah #assign the dataframe to the correct spot in the list
+}
+
+#combine all coefficients and p-value into a single dataframe
+coefficients_PW5ref <- bind_rows(coxcoef)#DB as the control
+#head(coefficients_PW5ref)
+write.csv(coefficients_PW5ref, file = "coefficients_PW5ref.csv")
+
+
+#############CI5 ref
+#PW14 ref, all other delted
+CI5ref = filter(bigcox, !(site %in% c("CI20")))
+write.csv(CI5ref, file = "CI5ref.csv")
+head(CI5ref)
+gc()
+
+#make the data for graphing
+sv = Surv(time = CI5ref$day, CI5ref$status, type = "right") #running Surv model on the replicate,
+#taking into account day and status
+sf <- survfit(sv ~ site + treatment + rep_id, data = CI5ref) #taking what we just made and 
+#putting it into a different function
+#graphing it- takes al ong time
+#ggsurvplot(sf, group.by = c(treatment, site), conf.int = 0.05) 
+#figure out a way to manually define confidence intervals based on the different replicates
+
+
+#create an empty list to store all of the replicate cox outputs
+numreps <- 500
+cox <- vector(mode = "list", length = numreps)
+coxcoef <- vector(mode = "list", length = numreps)
+
+
+#run the cox model in a for loop
+for(i in 1:numreps) { #for each of the 500 reps in each jar-- i is the replicate it's on
+  rep <- subset(CI5ref, rep_id == i)#filter 1 rep at a time
+  coxoutput <- coxph(Surv(day, status) ~ treatment * site, data = rep)
+  cox[[i]] <- coxoutput #store the whole output of the model in a list
+  blah <- data.frame( #create a data frame with the coefficients and the replicate
+    coefficients = coxoutput$coefficients,
+    replicate = i,
+    pval = summary(coxoutput)$coefficients[,5])
+  blah$treatment_site <- rownames(blah) #in that dataframe, create a new column that has the treatment and site
+  #info in it
+  coxcoef[[i]] <- blah #assign the dataframe to the correct spot in the list
+}
+
+#combine all coefficients and p-value into a single dataframe
+coefficients_CI5ref <- bind_rows(coxcoef)#DB as the control
+#head(coefficients_CI5ref)
+write.csv(coefficients_CI5ref, file = "coefficients_CI5ref.csv")
+
+
 
 
 

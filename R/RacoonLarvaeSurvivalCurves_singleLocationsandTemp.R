@@ -6,7 +6,7 @@ library(ggplot2)
 library(rms)
 library(readxl)
 setwd("C:/Users/Lindsay/Dropbox/Raccoon/larvae/oyster/larvae survival stats/GitHub/RacoonOlyLarvalSurvival/KM curves -single treatment-locatation")
-OlyLarvaeKMforR <- read_excel("C:/Users/Lindsay/Dropbox/Raccoon/larvae/oyster/larvae survival stats/GitHub/RacoonOlyLarvalSurvival/OlyLarvaeKMforR.xlsx")
+OlyLarvaeKMforR <- read_excel("data/fraility_RacoonOlyLarvaeSurvival/OlyLarvaeKMforR.xlsx")
 
 ##CI20############
 CI20<-subset(OlyLarvaeKMforR, Location=="CI20")
@@ -16,6 +16,8 @@ survCI20 <-Surv(time = CI20$day, CI20$dead, type = "right")
 
 # fit model and plot without random effect
 sfCI20 <- survfit(survCI20 ~ Treatment, data = CI20)
+coxA<-(coxph(survCI20 ~ Treatment, data = CI20))
+coxA
 summary(coxph(survCI20 ~ Treatment, data = CI20))
 ggsurvplot(sf, conf.int = TRUE)
 
