@@ -598,6 +598,12 @@ write.csv(coefficients_CI5ref, file = "coefficients_CI5ref.csv")
 
 
 #Next steps on this.
+
+# One issue is how to deal with the day 0 jar simumalion. Easiest (and maybe best?) solution is just start 
+# your survival analysis on day 1 when you start the 6ml sampling.
+#alternarive is to figure out the distibution of initial stocking density based on your stocking method.
+#the target intial stocking was 800 per jar, but there is liekly a lot of noise around that based on sampling
+
 # X simulate a 1000 valid (monotoncially decreasing) time series of counts for each jar
 # X The above code makes valid series, but need to modify it so you get a 1000 for each jar of the real data
 # X treat the jars like you have 1000 replicate experiments
@@ -606,15 +612,11 @@ write.csv(coefficients_CI5ref, file = "coefficients_CI5ref.csv")
 # x run the cox model on each of the 1000 data sets 
 # x store the output hazard ratio coefficients() as a vector with 1000 values) 
 # x you can actually just save all 1000 model outputs (not just coefficients) in case we want to look at other values
-#sort the coefficients from smallest to largest - the 2.5% and 97.5% quantiles will give the 95% confidence intervals. 
-# the mean is the expected value of the hazard ratio
+# x sort the coefficients from smallest to largest - the 2.5% and 97.5% quantiles will give the 95% confidence intervals. 
+# x the mean is  the expected value of the hazard ratio
 
 #after getting this to work with the simple cox model, can look at coxme or frailty_em to deal with mixed effects
 
-# One issue is how to deal with the day 0 jar simumalion. Easiest (and maybe best?) solution is just start 
-# your survival analysis on day 1 when you start the 6ml sampling.
-#alternarive is to figure out the distibution of initial stocking density based on your stocking method.
-#the target intial stocking was 800 per jar, but there is liekly a lot of noise around that based on sampling
 
 #the reason why the jar sampling is an issue has to do with whether larvae in the jar are distributed randomly or uniformly. 
 #If the larvae were uniformly distributed, your 6ml sample would exactly reflect what is in the jar
